@@ -35,6 +35,10 @@ export default class MerkleTree {
     return Buffer.from(sha256AsU8a(Buffer.concat([left, right])))
   }
 
+  // I'm not sure how big this tree can be, depending on the size
+  // We may need to use HashMaps instead of using .find() here,
+  // But then we'll be sacrificing from space instead of time.
+
   getLeafByBlockNumber(
     number: Header['number'] | number
   ): ReadableLeaf | undefined {
@@ -64,7 +68,6 @@ export default class MerkleTree {
       }
       offset += loopLength
     }
-    console.log('Successfully generated tree')
   }
 
   generateProof(header: Header, leafIndex = -1): Proof {

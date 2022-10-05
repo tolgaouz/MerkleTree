@@ -29,10 +29,6 @@ api.rpc.chain.subscribeNewHeads(header => {
     number: header.number,
   }
   const parsed = JSON.parse(JSON.stringify(withHash))
-  console.log(header.stateRoot)
-  console.log(u8aToHex(crypto.webcrypto.getRandomValues(new Uint8Array(32))))
-  console.log(Buffer.from(header.hash))
-  console.log(
-    Buffer.compare(Buffer.from(header.hash.toHuman()), Buffer.from(parsed.hash))
-  )
+  console.log(header.hash.toHuman())
+  console.log(header.hash.toString())
 })
