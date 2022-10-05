@@ -7,6 +7,5 @@ export type Proof = Array<{
   pairHash: Buffer
   index: number
 }>
-export type Leaf = Buffer | string | Header
 export { Header } from '@polkadot/types/interfaces/runtime'
-export { AnyJson } from '@polkadot/types-codec/types'
+export { AnyJson, IU8a } from '@polkadot/types-codec/types'

@@ -1,4 +1,4 @@
-import { AnyJson } from '../types'
+import { AnyJson, IU8a } from '../types'
 import MerkleTree from '../MerkleTree'
 
 /**
@@ -18,7 +18,7 @@ export default class HeaderClient {
 
   queryHeader(
     property: 'hash' | 'blockNumber',
-    value: Uint8Array | AnyJson
+    value: IU8a | AnyJson
   ): {
     tree?: MerkleTree
     header?: AnyJson
@@ -27,12 +27,12 @@ export default class HeaderClient {
       const tree = this.trees[i]
       switch (property) {
         case 'hash': {
-          const header = tree.getLeafByHash(value as Uint8Array)
+          const header = tree.getLeafByHash(value as IU8a)
           if (header != null) return { header, tree }
           break
         }
         case 'blockNumber': {
-          const header = tree.getLeafByPropertyValue('number', value as AnyJson)
+          const header = tree.getLeafByBlockNumber(value as number)
           if (header != null) return { header, tree }
           break
         }

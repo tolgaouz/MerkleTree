@@ -1,20 +1,26 @@
 import { sha256AsU8a } from '@polkadot/util-crypto'
-import { isEqual } from 'lodash'
-import { ReadableLeaf, Leaf, Proof, Header, AnyJson } from '../types'
+import { ReadableLeaf, Proof, Header, AnyJson, IU8a } from '../types'
 
 export default class MerkleTree {
-  private leaves: Buffer[] = []
+  public leaves: Buffer[] = []
   private hashes: Buffer[] = []
-  private depth: number
+  public depth: number
+
   constructor(headers: Header[]) {
-    this.leaves = headers.map(this.headerToBuffer)
+    this.leaves = headers.map(this.headerToLeaf)
     this.hashes = this.leaves.map(this.hashLeaf)
     this.depth = Math.log2(this.leaves.length)
     this.generateTree()
   }
 
-  headerToBuffer(header: Header): Buffer {
-    return Buffer.from(header.toString())
+  headerToLeaf(header: Header): Buffer {
+    return Buffer.from(
+      JSON.stringify({
+        ...header.toHuman(),
+        hash: header.hash.toString(),
+        number: header.number.toNumber(),
+      })
+    )
   }
 
   hashLeaf(leaf: Buffer): Buffer {
@@ -29,31 +35,16 @@ export default class MerkleTree {
     return Buffer.from(sha256AsU8a(Buffer.concat([left, right])))
   }
 
-  get hashFn() {
-    return sha256AsU8a
-  }
-
-  getLeafByPropertyValue(
-    property: string,
-    value: AnyJson
+  getLeafByBlockNumber(
+    number: Header['number'] | number
   ): ReadableLeaf | undefined {
-    return this.humanReadableLeaves.find(leaf => isEqual(leaf[property], value))
+    if (typeof number === 'object') number = number.toHuman() as number
+    return this.humanReadableLeaves.find(leaf => leaf.number == number)
   }
 
-  getLeafByHash(hash: Uint8Array): ReadableLeaf | undefined {
-    const idx = this.hashes.findIndex(
-      currentHash => Buffer.compare(currentHash, Buffer.from(hash)) === 0
-    )
-    if (idx !== -1) return this.humanReadableLeaves[idx]
-    return undefined
-  }
-
-  // For type safety
-  toBuffer(v: Leaf): Buffer {
-    // Type object means v is given as a Header type.
-    if (typeof v === 'object') return Buffer.from(v.toString())
-    if (typeof v === 'string') return Buffer.from(v)
-    return v
+  getLeafByHash(hash: IU8a | string): ReadableLeaf | undefined {
+    if (typeof hash === 'object') hash = hash.toHuman()
+    return this.humanReadableLeaves.find(leaf => leaf.hash === hash)
   }
 
   /**
@@ -76,16 +67,16 @@ export default class MerkleTree {
     console.log('Successfully generated tree')
   }
 
-  generateProof(leaf: Leaf, leafIndex = -1): { inclusionProof: Proof } {
+  generateProof(header: Header, leafIndex = -1): Proof {
     const proof: Proof = []
-    const bufferLeaf: Buffer = this.toBuffer(leaf)
+    const bufferLeaf: Buffer = this.headerToLeaf(header)
     // Find the index of the leaf
     if (leafIndex === -1) {
       this.leaves.forEach((currentLeaf, idx) => {
         if (Buffer.compare(bufferLeaf, currentLeaf) === 0) leafIndex = idx
       })
     }
-    if (leafIndex === -1) return { inclusionProof: proof }
+    if (leafIndex === -1) return proof
     let parentIndex = leafIndex
     for (let i = 0; i < this.depth; i++) {
       const isRightNode = parentIndex % 2
@@ -100,15 +91,14 @@ export default class MerkleTree {
       })
       parentIndex =
         parentIndex - isRightNode + this.leaves.length / Math.pow(2, i)
-      // Compare
     }
-    return { inclusionProof: proof }
+    return proof
   }
 
-  validate(leaf: Buffer | string | Header) {
-    const proof = this.generateProof(leaf)
-    if (proof.inclusionProof.length === 0) return false
-    proof.inclusionProof.forEach((step, idx) => {
+  validate(header: Header) {
+    const proof = this.generateProof(header)
+    if (proof.length === 0) return false
+    proof.forEach((step, idx) => {
       const isRightNode = step.position === 'right'
       const combinedHash = isRightNode
         ? Buffer.concat([step.pairHash, this.hashes[step.index]])
@@ -127,5 +117,9 @@ export default class MerkleTree {
 
   get humanReadableLeaves(): Record<string, AnyJson>[] {
     return this.leaves.map(this.leafToObject)
+  }
+
+  get hashFn() {
+    return sha256AsU8a
   }
 }
