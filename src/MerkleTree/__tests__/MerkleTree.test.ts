@@ -1,5 +1,5 @@
 import type { Header } from '../../types'
-import MerkleTree from '../MerkleTree'
+import MerkleTree from '..'
 import MockHeader from '../../__mocks__/MockHeader'
 
 describe('MerkleTree', () => {
@@ -52,13 +52,13 @@ describe('MerkleTree', () => {
     expect(proof).toStrictEqual([])
   })
 
-  it('Validates leaf if it exists in the tree', () => {
+  it('Verifies leaf if it exists in the tree', () => {
     const headers = [...new Array(8)].map(
       (_, i) => new MockHeader(i) as unknown as Header
     )
     const headerNotInTree = new MockHeader(9999) as unknown as Header
     const tree = new MerkleTree(headers)
-    expect(tree.validate(headers[0])).toBe(true)
-    expect(tree.validate(headerNotInTree)).toBe(false)
+    expect(tree.verify(headers[0])).toBe(true)
+    expect(tree.verify(headerNotInTree)).toBe(false)
   })
 })

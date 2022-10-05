@@ -1,7 +1,7 @@
 import MockHeader, { MockHash } from '../../__mocks__/MockHeader'
 import { Header, IU8a } from '../../types'
 import * as crypto from 'crypto'
-import HeaderClient from '../HeaderClient'
+import HeaderClient from '..'
 import MerkleTree from '../../MerkleTree'
 
 describe('HeaderClient', () => {
@@ -20,10 +20,11 @@ describe('HeaderClient', () => {
       )
       client.addTree(new MerkleTree(headers))
     })
-    expect(client.queryHeader('blockNumber', 3).header).toMatchObject(
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    expect(client.queryByNumber(3)!.header?.toHuman()).toMatchObject(
       header.toHuman()
     )
-    expect(client.queryHeader('blockNumber', 999).header).toBe(undefined)
+    expect(client.queryByNumber(999)).toBe(undefined)
   })
 
   it('Queries header by hash correctly', () => {
@@ -41,16 +42,16 @@ describe('HeaderClient', () => {
       )
       client.addTree(new MerkleTree(headers))
     })
-    expect(client.queryHeader('hash', header.hash).header).toMatchObject(
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    expect(client.queryByHash(header.hash)!.header.toHuman()).toMatchObject(
       header.toHuman()
     )
     expect(
-      client.queryHeader(
-        'hash',
+      client.queryByHash(
         new MockHash(
           crypto.webcrypto.getRandomValues(new Uint8Array(32))
         ) as IU8a
-      ).header
+      )
     ).toBe(undefined)
   })
 })
